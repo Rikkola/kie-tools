@@ -28,10 +28,11 @@ interface HookArgs {
   webToolsEditor: WebToolsEmbeddedEditorRef | undefined;
   content: string | undefined;
   fileRelativePath: string;
+  lazyNotifications: Notification[] | undefined;
 }
 
 export function useEditorNotifications(args: HookArgs) {
-  const { webToolsEditor, content, fileRelativePath } = { ...args };
+  const { webToolsEditor, content, fileRelativePath, lazyNotifications } = { ...args };
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const editorDispatch = useEditorDispatch();
 
@@ -70,11 +71,17 @@ export function useEditorNotifications(args: HookArgs) {
                   },
                 } as Notification)
             );
-            setNotifications(mappedDiagnostics);
+
+            if (args.lazyNotifications === undefined) {
+              setNotifications(mappedDiagnostics);
+            } else {
+              setNotifications(lazyNotifications!.concat(mappedDiagnostics));
+            }
+            webToolsEditor.editor?.validate().then((result: Notification[]) => {});
           })
           .catch((e) => console.error(e));
       },
-      [content, fileRelativePath, webToolsEditor]
+      [content, fileRelativePath, webToolsEditor, lazyNotifications]
     )
   );
 

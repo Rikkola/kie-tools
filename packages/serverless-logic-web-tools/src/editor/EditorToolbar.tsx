@@ -43,6 +43,7 @@ import {
 import { Tooltip } from "@patternfly/react-core/dist/js/components/Tooltip";
 import { Flex, FlexItem } from "@patternfly/react-core/dist/js/layouts/Flex";
 import { AngleLeftIcon } from "@patternfly/react-icons/dist/js/icons/angle-left-icon";
+import { PlayIcon } from "@patternfly/react-icons/dist/js/icons/play-icon";
 import { ArrowCircleUpIcon } from "@patternfly/react-icons/dist/js/icons/arrow-circle-up-icon";
 import { CaretDownIcon } from "@patternfly/react-icons/dist/js/icons/caret-down-icon";
 import { OutlinedHddIcon } from "@patternfly/react-icons/dist/js/icons/outlined-hdd-icon";
@@ -100,10 +101,16 @@ import { Link } from "react-router-dom";
 import { routes } from "../navigation/Routes";
 import { isEditable } from "../extension";
 import { ConfirmDeleteModal } from "../table";
+import { VialIcon } from "@patternfly/react-icons/dist/js";
+import { validationPromise } from "@kie-tools/yard-validator/dist";
+import { Notification } from "@kie-tools-core/notifications/dist/api";
+import { resolve } from "path";
+import { useEditorDispatch } from "./hooks/EditorContext";
 
 export interface Props {
   editor: EmbeddedEditorRef | undefined;
   workspaceFile: WorkspaceFile;
+  onValidate: () => void;
 }
 
 const showWhenSmall: ToolbarItemProps["visibility"] = {
@@ -938,6 +945,22 @@ If you are, it means that creating this Gist failed and it can safely be deleted
     );
   }, [workspaces, props.workspaceFile, githubAuthInfo, comittingAlert, commitSuccessAlert]);
 
+  const validateDropdownItem = useMemo(() => {
+    return (
+      <DropdownItem
+        key={"validate-dropdown-item"}
+        icon={<PlayIcon />}
+        onClick={async () => {
+          props.onValidate();
+        }}
+        description={"Run model validation"}
+        ouiaId={"commit-button"}
+      >
+        Validate
+      </DropdownItem>
+    );
+  }, [props.editor]);
+
   const pushSuccessAlert = useGlobalAlert(
     useCallback(
       ({ close }) => {
@@ -1735,6 +1758,7 @@ If you are, it means that creating this Gist failed and it can safely be deleted
                           deleteFileDropdownItem,
                           <Divider key={"divider-0"} />,
                           createSavePointDropdownItem,
+                          validateDropdownItem,
                           <Divider key={"divider-1"} />,
                           ...shareDropdownItems,
                           ...(!canBeDeployed
