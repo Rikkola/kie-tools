@@ -28,17 +28,24 @@ interface HookArgs {
   webToolsEditor: WebToolsEmbeddedEditorRef | undefined;
   content: string | undefined;
   fileRelativePath: string;
-  lazyNotifications: Notification[] | undefined;
 }
 
 export function useEditorNotifications(args: HookArgs) {
-  const { webToolsEditor, content, fileRelativePath, lazyNotifications } = { ...args };
+  const { webToolsEditor, content, fileRelativePath } = { ...args };
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [lazyNotifications, setLazyNotifications] = useState<Notification[]>([]);
   const editorDispatch = useEditorDispatch();
 
   useEffect(() => {
     editorDispatch.setNotifications(notifications);
   }, [editorDispatch, notifications]);
+
+  const onLazyValidate = useCallback(async () => {
+    if (!webToolsEditor?.editor) {
+      return;
+    }
+    setLazyNotifications(await webToolsEditor.editor.validate());
+  }, [webToolsEditor]);
 
   useCancelableEffect(
     useCallback(
@@ -71,13 +78,7 @@ export function useEditorNotifications(args: HookArgs) {
                   },
                 } as Notification)
             );
-
-            if (args.lazyNotifications === undefined) {
-              setNotifications(mappedDiagnostics);
-            } else {
-              setNotifications(lazyNotifications!.concat(mappedDiagnostics));
-            }
-            webToolsEditor.editor?.validate().then((result: Notification[]) => {});
+            setNotifications([...mappedDiagnostics, ...lazyNotifications]);
           })
           .catch((e) => console.error(e));
       },
@@ -85,5 +86,5 @@ export function useEditorNotifications(args: HookArgs) {
     )
   );
 
-  return notifications;
+  return { notifications, onLazyValidate };
 }

@@ -70,13 +70,11 @@ export function EditorPage(props: Props) {
   const isEditorReady = useMemo(() => webToolsEditor?.editor?.isReady, [webToolsEditor]);
   const queryParams = useQueryParams();
   const alertsDispatch = useGlobalAlertsDispatchContext();
-  const [lazyNotifications, setLazyNotifications] = useState<Notification[]>();
 
-  const notifications = useEditorNotifications({
+  const { notifications, onLazyValidate } = useEditorNotifications({
     webToolsEditor,
     content: lastContent.current,
     fileRelativePath: props.fileRelativePath,
-    lazyNotifications,
   });
 
   useEffect(() => {
@@ -226,12 +224,6 @@ export function EditorPage(props: Props) {
     [webToolsEditor]
   );
 
-  function onValidate() {
-    webToolsEditor?.editor?.validate().then((notifications: Notification[]) => {
-      setLazyNotifications(notifications);
-    });
-  }
-
   return workspacePromise.status === PromiseStateStatus.REJECTED ? (
     <ErrorPage kind="File" errors={workspacePromise.error} filePath={props.fileRelativePath} />
   ) : (
@@ -242,7 +234,11 @@ export function EditorPage(props: Props) {
       resolved={(file) => (
         <>
           <Page>
-            <EditorToolbar workspaceFile={file.workspaceFile} editor={webToolsEditor?.editor} onValidate={onValidate} />
+            <EditorToolbar
+              workspaceFile={file.workspaceFile}
+              editor={webToolsEditor?.editor}
+              onValidate={onLazyValidate}
+            />
             <Divider />
             <EditorPageDockDrawer
               ref={editorPageDockRef}

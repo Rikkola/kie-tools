@@ -101,11 +101,6 @@ import { Link } from "react-router-dom";
 import { routes } from "../navigation/Routes";
 import { isEditable } from "../extension";
 import { ConfirmDeleteModal } from "../table";
-import { VialIcon } from "@patternfly/react-icons/dist/js";
-import { validationPromise } from "@kie-tools/yard-validator/dist";
-import { Notification } from "@kie-tools-core/notifications/dist/api";
-import { resolve } from "path";
-import { useEditorDispatch } from "./hooks/EditorContext";
 
 export interface Props {
   editor: EmbeddedEditorRef | undefined;
@@ -946,20 +941,22 @@ If you are, it means that creating this Gist failed and it can safely be deleted
   }, [workspaces, props.workspaceFile, githubAuthInfo, comittingAlert, commitSuccessAlert]);
 
   const validateDropdownItem = useMemo(() => {
-    return (
-      <DropdownItem
-        key={"validate-dropdown-item"}
-        icon={<PlayIcon />}
-        onClick={async () => {
-          props.onValidate();
-        }}
-        description={"Run model validation"}
-        ouiaId={"commit-button"}
-      >
-        Validate
-      </DropdownItem>
-    );
-  }, [props.editor]);
+    return isOfKind("yard", props.workspaceFile.name)
+      ? [
+          <DropdownItem
+            key={"validate-dropdown-item"}
+            icon={<PlayIcon />}
+            onClick={async () => {
+              props.onValidate();
+            }}
+            description={"Run model validation"}
+            ouiaId={"commit-button"}
+          >
+            Validate
+          </DropdownItem>,
+        ]
+      : [];
+  }, [props]);
 
   const pushSuccessAlert = useGlobalAlert(
     useCallback(
@@ -1747,7 +1744,12 @@ If you are, it means that creating this Gist failed and it can safely be deleted
                       <KebabDropdown
                         id={"kebab-lg"}
                         state={[isLargeKebabOpen, setLargeKebabOpen]}
-                        items={[deleteFileDropdownItem, <Divider key={"divider-0"} />, createSavePointDropdownItem]}
+                        items={[
+                          deleteFileDropdownItem,
+                          <Divider key={"divider-0"} />,
+                          createSavePointDropdownItem,
+                          ...validateDropdownItem,
+                        ]}
                       />
                     </ToolbarItem>
                     <ToolbarItem visibility={showWhenSmall} style={{ marginRight: 0 }}>
@@ -1758,7 +1760,7 @@ If you are, it means that creating this Gist failed and it can safely be deleted
                           deleteFileDropdownItem,
                           <Divider key={"divider-0"} />,
                           createSavePointDropdownItem,
-                          validateDropdownItem,
+                          ...validateDropdownItem,
                           <Divider key={"divider-1"} />,
                           ...shareDropdownItems,
                           ...(!canBeDeployed
